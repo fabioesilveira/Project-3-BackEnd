@@ -7,21 +7,22 @@ const path = require("path")
 // Import the two parts of a GraphQL schema
 const {typeDefs, resolvers} = require("./schemas")
 const db = require('./connection')
+const { authMiddleware } = require('./utils/auth')
 
 // Create the apollo server
-const server = new ApolloServer({typeDefs, resolvers})
+const server = new ApolloServer({typeDefs, resolvers, context: authMiddleware})
 const PORT = process.env.PORT || 3001
 const app = express();
 
 
 
 
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
 // Create a new instance of an Apollo server with the GraphQL schema
 async function startApolloServer(){
   await server.start()
-
-  app.use(express.urlencoded({ extended: false }))
-  app.use(express.json())
+server.applyMiddleware({app})
 
   // If production server(with Heroku) then use the built react app which is in the dist folder
   if (process.env.NODE_ENV === 'production') {
@@ -39,7 +40,7 @@ async function startApolloServer(){
     context: authMiddleware // Sets the context argument for GraphQL resolvers
   })*/
   
-  app.use('/graphql', expressMiddleware(server));
+  //app.use('/graphql', expressMiddleware(server));
 
 
   db.once('open', () => {

@@ -1,5 +1,6 @@
 
 const { User, Post } = require('../models');
+const { signToken } = require('../utils/auth');
 
 const resolvers = {
   Query: {
@@ -32,15 +33,21 @@ const resolvers = {
   Mutation: {
     addUser: async (parent, { username, password }) => {
       const userAdded = await User.create({ username, password });
+      const token = signToken(userAdded);
       console.log(userAdded);
-      return userAdded;
+      return { token, userAdded };
     },
     login: async (parent, { username, password }) => {
       const userLogin = await User.findOne({ username });
+      const correctPw = await userLogin.isCorrectPassword(password);
+      if (!correctPw) {
+        throw new AuthenticationError('Incorrect credentials');
+      }
+      const token = signToken(userLogin);
       console.log(userLogin);
-      return userLogin;
+      return { token, userLogin };
     },
-    addPost: async (parent, { postText, timeLimit, likes }) => {
+    addPost: async (parent, { postText, timeLimit, likes }, context) => {
       const postAdded = await Post.create({ postText, timeLimit, likes });
       console.log(postAdded);
       return postAdded;
